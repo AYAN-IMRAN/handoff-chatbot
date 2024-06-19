@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <!-- <script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
+    <df-messenger chat-icon="https:&#x2F;&#x2F;handyhelps.ca&#x2F;assets&#x2F;img&#x2F;team&#x2F;Dwight.jpg"
+        intent="WELCOME" chat-title="JACK from HandyHelps 🤖" agent-id="693925ca-5bc7-4861-9a22-5507e57bf673" language-code="en">
+    </df-messenger>
+    <style>
+        df-messenger {
+         --df-messenger-chat-icon: black ;
+         --df-messenger-bot-message: #ecc608;
+         --df-messenger-button-titlebar-color: #000000;
+         --df-messenger-button-titlebar-font-color:rgb(255, 255, 255);
+         --df-messenger-chat-background-color: #ffffff;
+         --df-messenger-font-color: rgb(255, 255, 255);
+         --df-messenger-send-icon: #0059ff;
+         --df-messenger-user-message: #753bfb;  
+         --df-messenger-input-box-color:#edf7fc;  
+        }
+      </style> -->
+
+      <script type="text/javascript">
+        (function(d, m){
+            var kommunicateSettings = 
+                {"appId":"76bf2c0fc4aca4e3c1871dc34ace528d","popupWidget":true,"automaticChatOpenOnNavigation":true};
+            var s = document.createElement("script"); s.type = "text/javascript"; s.async = true;
+            s.src = "https://widget.kommunicate.io/v2/kommunicate.app";
+            var h = document.getElementsByTagName("head")[0]; h.appendChild(s);
+            window.kommunicate = m; m._globals = kommunicateSettings;
+        })(document, window.kommunicate || {});
+    /* NOTE : Use web server to view HTML files as real-time update will not work if you directly open the HTML file in the browser. */
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operator Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+      body { font-family: 'Helvetica', 'Arial', sans-serif; }
+      .chat-bubble { max-width: 75%; padding: 10px; border-radius: 10px; margin-bottom: 10px; display: flex; align-items: center; }
+      .user-message { background-color: #dcf8c6; align-self: flex-end; }
+      .bot-message { background-color: #ffffff; align-self: flex-start; }
+      .message-icon { width: 24px; height: 24px; margin-right: 8px; }
+    </style>
+  </head>
+  <body class="h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <div class="w-1/4 bg-gray-800 text-white flex flex-col">
+      <div class="px-4 py-2 border-b border-gray-700 flex items-center">
+        <input type="text" placeholder="Search or start new chat" class="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none">
+      </div>
+      <ul id="chatTabs" class="overflow-y-auto flex-grow p-2 space-y-2">
+        <!-- Chat tabs will be appended here -->
+      </ul>
+    </div>
+    <!-- Main Chat Window -->
+    <div class="w-3/4 flex flex-col">
+      <div class="flex-grow overflow-y-auto p-4 bg-gray-100">
+        <ul id="chatWindows" class="space-y-2">
+          <!-- Chat windows will be appended here -->
+        </ul>
+      </div>
+      <form class="bg-gray-200 p-4 flex items-center">
+        <input id="m" autocomplete="off" class="flex-grow p-3 rounded-l-md border border-gray-300 focus:outline-none" placeholder="Type your message...">
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-r-md">Send</button>
+      </form>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script>
+      $(function () {
+        var socket = io('/operator');
+
+        var connectedCustomers = {};
+        var currentTab;
+
+        var messageObject = function(customerId, utterance) {
+          return { customerId: customerId, utterance: utterance };
+        };
+
+        $('form').submit(function() {
+          if (currentTab.disconnected) {
+            alert('This customer has disconnected');
+            return false;
+          }
+          var messageText = $('#m').val();
+          $('#messages').append(createMessageElement(messageText, true));
+          socket.emit('operator message', messageObject(currentTab.customerId, messageText));
+          $('#m').val('');
+          return false;
+        });
+
+        var setCurrentTab = function(target) {
+          if (currentTab === target) return;
+          currentTab = target;
+          $('li.chat-tab').removeClass('bg-gray-700 text-white');
+          target.tab.addClass('bg-gray-700 text-white');
+          $('.chat-window').hide();
+          target.window.show();
+        };
+
+        var createNewCustomerTab = function(customerId) {
+          var newChatElements = {};
+          newChatElements.customerId = customerId;
+          newChatElements.tab = $('<li class="chat-tab px-4 py-2 cursor-pointer rounded-lg bg-gray-600 text-white">').text(customerId);
+          newChatElements.window = $('<ul class="chat-window space-y-2 hidden">');
+
+          newChatElements.tab.click(function() {
+            setCurrentTab(newChatElements);
+          });
+
+          connectedCustomers[customerId] = newChatElements;
+
+          if (!currentTab) {
+            setCurrentTab(newChatElements);
+          }
+
+          $('#chatTabs').append(newChatElements.tab);
+          $('#chatWindows').append(newChatElements.window);
+        };
+
+        var notifyOperatorRequest = function(customerId) {
+          if (!connectedCustomers[customerId]) {
+            return;
+          }
+          setCurrentTab(connectedCustomers[customerId]);
+          alert('Operator requested!');
+        };
+
+        var notifyCustomerDisconnected = function(customerId) {
+          if (!connectedCustomers[customerId]) {
+            return;
+          }
+          connectedCustomers[customerId].disconnected = true;
+          connectedCustomers[customerId].window.append($('<li class="customer-message text-red-500">').text('--- Customer disconnected ---'));
+        };
+
+        var notifySystemError = function(error) {
+          var errorText;
+          if (error.type === 'CustomerModeError') {
+            errorText = error.message;
+          } else {
+            errorText = error.type + ' - ' + error.message;
+          }
+          if (!currentTab) return;
+          currentTab.window.append($('<li class="operator-error text-red-500">').text(errorText));
+        };
+
+        var receivedOperatorMessage = function(msg) {
+          var customer = connectedCustomers[msg.customerId];
+          if (!customer) {
+            return;
+          }
+          customer.window.append($('<li class="operator-message chat-bubble user-message gray">').html('<img src="https://img.icons8.com/ios-filled/50/000000/user-male-circle.png" class="message-icon">' + msg.utterance));
+        };
+
+        var receivedCustomerMessage = function(msg) {
+          if (!connectedCustomers[msg.customerId]) {
+            return;
+          }
+          var prefix = msg.isAgentResponse ? 'Agent: ' : 'Customer: ';
+          connectedCustomers[msg.customerId].window.append($('<li class="customer-message chat-bubble bot-message">').html('<img src="https://img.icons8.com/ios-filled/50/000000/robot-2.png" class="message-icon">' + prefix + msg.utterance));
+        };
+
+        socket.on('customer connected', createNewCustomerTab);
+        socket.on('customer message', receivedCustomerMessage);
+        socket.on('operator requested', notifyOperatorRequest);
+        socket.on('operator message', receivedOperatorMessage);
+        socket.on('customer disconnected', notifyCustomerDisconnected);
+        socket.on('system error', notifySystemError);
+      });
+    </script>
+  </body>
+</html>
